@@ -1,0 +1,369 @@
+#in Anaconda, use Tkinter, otherwise tkinter
+from tkinter import *
+import time
+import random
+
+class Snake(object):
+
+    def __init__(self, canvas, color, food, score):
+        self.canvas = canvas
+        self.color = color
+        self.food = food
+        self.score = score
+        #initializes the empty body array
+        self.body_list = []
+        #sets the snake's length to 3 segments
+        self.snake_length = 3
+        #width of each segment
+        self.rectWidth = 20
+        #self.head = 0
+        #initializes the speed
+        self.x = 0
+        self.y = -self.rectWidth
+        
+        self.canvas_height = self.canvas.winfo_height()
+        self.canvas_width = self.canvas.winfo_width()
+
+        #setting the initial conditions.
+        self.hit_object = False
+        self.started = False
+        self.eat_food = False
+        self.condition = True
+        
+        #binds the movement of the snake to the arrows.
+        self.canvas.bind_all('<KeyPress-Left>', self.turn_left)
+        self.canvas.bind_all('<KeyPress-Right>', self.turn_right)
+        self.canvas.bind_all('<KeyPress-Up>', self.turn_up)
+        self.canvas.bind_all('<KeyPress-Down>', self.turn_down)
+
+        #the game will start once the left-mouse button is pushed.
+        self.canvas.bind_all('<Button-1>', self.start_game)
+
+        #calls the create_snake function to create the initial snake 
+        self.create_snake()
+
+
+    #function starts the game
+    def start_game(self, evt):
+        self.started = True
+
+    #creates the initial snake on the canvas
+    def create_snake(self):
+        #creates head
+        self.id = canvas.create_rectangle(0,0,self.rectWidth,
+                            self.rectWidth, fill = self.color)
+        self.head = self.id
+        #move the snake's head to this location.
+        self.canvas.move(self.id, 240, 200)
+        #stores the head's location into the body_list array.
+        self.body_list.append([self.id, self.canvas.coords(self.id)])
+        
+        #Creates 2nd body segment
+        self.id = canvas.create_rectangle(0,0,
+                            self.rectWidth,self.rectWidth, fill = self.color)
+        self.canvas.move(self.id, 240, 220)
+        self.body_list.append([self.id, self.canvas.coords(self.id)])
+        
+        #Creates 3rd body segment
+        self.id = canvas.create_rectangle(0,0,
+                            self.rectWidth,self.rectWidth, fill = self.color)
+        self.canvas.move(self.id, 240, 240)
+        self.body_list.append([self.id, self.canvas.coords(self.id)])
+
+
+    # draw the snake in the window/canvas
+    def draw(self):             
+        #move the body to follow the head.
+        length = len(self.body_list)-1
+        for i in range(length):
+            pos_next = self.canvas.coords(self.body_list[length-(i+1)][0])
+            pos_now = self.canvas.coords(self.body_list[length-i][0])
+            self.next_x1 = pos_next[0]
+            self.next_y1 = pos_next[1]
+            self.now_x1 = pos_now[0]
+            self.now_y1 = pos_now[1]
+            move_x = self.next_x1-self.now_x1
+            move_y = self.next_y1-self.now_y1
+            #move the body
+            self.canvas.move(self.body_list[length-i][0], move_x, move_y)
+            #update the position of the body in the list
+            self.body_list[length-i][1] = self.canvas.coords(self.body_list[length-i][0])
+            
+        #move the head
+        self.canvas.move(self.body_list[0][0], self.x, self.y)
+        #update the position of the head in the list
+        self.body_list[0][1] = self.canvas.coords(self.body_list[0][0])
+        
+        #wait a bit of time
+        time.sleep(0.05)
+
+    
+    #check to see if the snake hits the wall
+    def check_hitwall(self):
+        position = self.canvas.coords(self.body_list[0][0])
+        
+        self.x1 = position[0]
+        self.y1 = position[1]
+        self.x2 = position[2]
+        self.y2 = position[3]
+        if self.x1 < 0 or self.x2 > self.canvas_width:
+            self.hit_object = True
+            self.score.lose_life()
+            
+        if self.y1 <0 or self.y2 > self.canvas_height:
+            self.hit_object = True
+            self.score.lose_life()
+            
+        
+    #check to see if the snake bites itself
+    def check_bite(self):
+        length = len(self.body_list)-1
+        for i in range(length):
+            if self.body_list[0][1]==self.body_list[i+1][1]:
+                self.hit_object = True
+                self.score.lose_life()
+
+
+    #check to see if the snake eats the food
+    def eat(self):
+        position = self.canvas.coords(self.body_list[0][0])
+        self.x1 = position[0]
+        self.y1 = position[1]
+        self.x2 = position[2]
+        self.y2 = position[3]
+
+        food_position = self.canvas.coords(self.food.id)
+        fx1 = food_position[0]
+        fy1 = food_position[1]
+        fx2 = food_position[2]
+        fy2 = food_position[3]
+        
+        if self.x1 < fx1 and self.x2 > fx2 and self.y1 < fy1 and self.y2 > fy2:
+            #snake eats the food
+            #move the food
+            self.food.eaten()
+        
+            #add a body segment
+            self.add_body()
+            
+            #increase the score
+            self.score.increase()
+        
+            #make the game faster
+            game.increase_speed()
+        
+    def add_body(self):
+        #logic to figure out the coordinates of the new body segment.
+        length = len(self.body_list)
+        pos_next = self.canvas.coords(self.body_list[length-1][0])
+        pos_last= self.canvas.coords(self.body_list[length-2][0])
+        self.next_x1 = pos_next[0]
+        self.next_y1 = pos_next[1]       
+        self.last_x1 = pos_last[0]
+        self.last_y1 = pos_last[1]
+        
+        move_x = self.next_x1-self.last_x1
+        move_y = self.next_y1-self.last_y1
+
+        #create the new body segment
+        self.id = canvas.create_rectangle(move_x,move_y,move_x-20,move_y-20, fill = self.color)
+        self.canvas.move(self.id, 2*move_x, 2*move_y)
+        self.body_list.append([self.id, self.canvas.coords(self.id)])
+
+    #left and right functions
+    def turn_left(self, evt):
+        if self.x > 0:
+            pass
+        else:
+            self.x = -self.rectWidth
+            self.y = 0
+    def turn_right(self, evt):
+        if self.x < 0:
+            pass
+        else:
+            self.x = self.rectWidth
+            self.y = 0
+    def turn_up(self, evt):
+        if self.y > 0:
+            pass
+        else:
+            self.x = 0
+            self.y = -self.rectWidth
+    def turn_down(self, evt):
+        if self.y <0:
+            pass
+        else:
+            self.x = 0
+            self.y = self.rectWidth
+
+
+
+class Food(object):
+    def __init__(self, canvas, color):
+        self.canvas = canvas
+        self.color = color
+        self.rectWidth = 20
+        #creates a circle to represent the food
+        self.id = canvas.create_oval(0,0,
+                        self.rectWidth/2,self.rectWidth/2, fill = color)
+
+        self.canvas_height = self.canvas.winfo_height()
+        self.canvas_width = self.canvas.winfo_width()
+
+
+        # set random x, y position
+        self.x = random.randint(1, self.canvas_width/self.rectWidth)
+        self.y = random.randint(1, self.canvas_height/self.rectWidth)
+
+        # move the food to this location.
+        self.canvas.move(self.id, 
+                         self.x*self.rectWidth-15, self.y*self.rectWidth-15)
+       
+    def eaten(self):
+        self.canvas.move(self.id, 
+                         -self.x*self.rectWidth+15, -self.y*self.rectWidth+15)
+        self.x = random.randint(1, self.canvas_width/self.rectWidth)
+        self.y = random.randint(1, self.canvas_height/self.rectWidth)
+
+        # move the food to this new location.
+        self.canvas.move(self.id, self.x*self.rectWidth-15, 
+                         self.y*self.rectWidth-15)
+
+
+class Score(object):
+    def __init__(self, canvas, color):
+        self.canvas = canvas
+        self.color = color
+        self.score = 0
+        self.lives = 3
+        self.lose = False
+        self.id = canvas.create_text(440, 10, text = "Score: ", \
+                                     fill = color)
+        self.score_id = canvas.create_text(470, 10, text=self.score, \
+                                     fill=color)
+        self.id = canvas.create_text(30, 10, text = "Lives: ", \
+                                     fill = color)
+        self.lives_id = canvas.create_text(60, 10, text = self.lives, \
+                                     fill = color)
+        
+    #if the ball hits a brick, increase the score by 1
+    def increase(self):
+        self.score += 1
+        self.canvas.itemconfig(self.score_id, text=self.score)
+
+    #if the ball goes past the paddle, decrease the number of lives by 1
+    def lose_life(self):
+        self.lives -=1
+        self.canvas.itemconfig(self.lives_id, text=self.lives)
+        self.check_life()
+
+    #check to see if the player's score matches the number of bricks
+    def check_life(self):
+        if self.lives == 0:
+            self.lose = True
+        else:
+            pass
+
+class Game(object):
+    def __init__(self, canvas, snake, score):
+        self.canvas = canvas
+        self.snake = snake
+        self.score = score
+        self.speed = 0.1
+    
+    def restart(self):
+
+        self.snake.condition = False
+        self.hit_text = canvas.create_text(250,200,text="You Died!",
+                                    fill="black",font="TimesNewRoman 15")
+        tk.update_idletasks()
+        tk.update()
+
+        if self.score.lose == False:
+            self.frame = Frame(tk)
+            self.frame.pack()
+            
+            self.button_quit = Button(self.frame, text="QUIT", bg="green", command = quit)
+            self.button_quit.pack(side=LEFT)
+            self.button_again = Button(self.frame,text="PLAY AGAIN", bg = 'green', command = self.play_again)
+            self.button_again.pack(side=LEFT)
+
+        if self.score.lose == True:
+            if snake.hit_object == True:
+                self.canvas.delete(self.hit_text)
+                self.gameOverText = canvas.create_text(250,200,text="Game Over",
+                                    fill="black",font="TimesNewRoman 15")
+                time.sleep(2)
+                self.snake.condition = False
+                    
+                
+    def play_again(self):
+        #removes the buttons and the extra row off the canvas
+        self.button_quit.destroy()
+        self.button_again.destroy()
+        self.frame.destroy()
+
+        #resets the score
+        self.score.score = 0
+        self.canvas.itemconfig(self.score.score_id, text=self.score.score)
+        self.canvas.delete(self.hit_text)
+
+        #resets the snake
+        length = len(self.snake.body_list)
+        for i in range(length):
+            self.canvas.delete(self.snake.body_list[i][0])
+        snake = Snake(canvas, "green", food, score)
+        self.snake = snake
+
+        #starts the mainloop again
+        self.speed = .1
+        self.mainloop()
+
+    def increase_speed(self):
+        if self.speed >=.015:
+            self.speed -= .005
+        else:
+            print("Nice job! You've maxed out your speed!")
+            
+    #This is our animation loop
+    def mainloop(self):
+        while self.snake.condition: 
+            if self.snake.started == True:
+                if self.snake.hit_object==False:
+                    self.snake.check_hitwall()
+                    self.snake.check_bite()
+                    self.snake.draw()
+                    self.snake.eat()
+                elif self.snake.hit_object==True:
+                    self.restart()
+
+     
+            tk.update_idletasks()
+            tk.update()
+            time.sleep(self.speed)
+
+
+#Normal tkinter intro.
+tk = Tk()
+#Title of the game
+tk.title("Game")
+tk.resizable(0, 0)
+#window appears on top
+tk.wm_attributes("-topmost", 1)
+#dimensions of the canvas
+canvas = Canvas(tk, width=500, height=400, bd=0, highlightthickness=0)
+canvas.pack()
+#tkinter redraws the canvas
+tk.update()
+#the higher the number, the slower the snake
+
+food = Food(canvas, "red")
+score = Score(canvas, "blue")
+snake = Snake(canvas, "green", food, score)
+game = Game(canvas, snake, score)
+
+
+
+game.mainloop()
+        
+
